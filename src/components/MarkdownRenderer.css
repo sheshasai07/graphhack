@@ -1,0 +1,242 @@
+.markdown-prose-container {
+  font-size: 14px;
+  line-height: 1.65;
+  color: var(--text-primary);
+  word-break: break-word;
+}
+
+/* Headings */
+.md-h1 {
+  font-size: 19px;
+  font-weight: 700;
+  color: #ffffff;
+  margin: 16px 0 10px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--border);
+  letter-spacing: -0.3px;
+}
+
+.md-h1:first-child {
+  margin-top: 0;
+}
+
+.md-h2 {
+  font-size: 16px;
+  font-weight: 700;
+  color: #f1f5f9;
+  margin: 16px 0 8px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.md-h2:first-child {
+  margin-top: 0;
+}
+
+.md-h3 {
+  font-size: 14px;
+  font-weight: 600;
+  color: #e2e8f0;
+  margin: 12px 0 6px;
+}
+
+.md-h4 {
+  font-size: 13px;
+  font-weight: 600;
+  color: #cbd5e1;
+  margin: 10px 0 4px;
+}
+
+/* Paragraphs */
+.md-p {
+  margin-bottom: 12px;
+  line-height: 1.65;
+}
+
+.md-p:last-child {
+  margin-bottom: 0;
+}
+
+/* Lists */
+.md-ul, .md-ol {
+  margin: 8px 0 14px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.md-li {
+  line-height: 1.6;
+  color: #f1f5f9;
+}
+
+.md-ul > .md-li::marker {
+  color: var(--accent);
+}
+
+.md-ol > .md-li::marker {
+  color: var(--accent-2);
+  font-weight: 600;
+}
+
+/* Inline Code */
+.md-inline-code {
+  background: rgba(30, 41, 59, 0.7);
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  color: #38bdf8;
+  padding: 2px 6px;
+  border-radius: 5px;
+  font-family: 'JetBrains Mono', 'Fira Code', monospace;
+  font-size: 12.5px;
+}
+
+/* Code Blocks */
+.code-block-wrapper {
+  margin: 14px 0;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  background: #0d0f17;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+}
+
+.code-block-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 12px;
+  background: #141722;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.code-lang-label {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #94a3b8;
+  font-family: monospace;
+}
+
+.code-copy-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: var(--text-secondary);
+  padding: 3px 8px;
+  border-radius: 5px;
+  font-size: 11px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.code-copy-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--text-primary);
+}
+
+.copy-check {
+  color: #34d399;
+}
+
+.code-pre {
+  margin: 0;
+  padding: 14px 16px;
+  overflow-x: auto;
+  font-family: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
+  font-size: 13px;
+  line-height: 1.55;
+  color: #e2e8f0;
+}
+
+/* Blockquotes */
+.md-blockquote {
+  margin: 14px 0;
+  padding: 10px 16px;
+  border-left: 3px solid var(--accent);
+  background: rgba(99, 102, 241, 0.06);
+  border-radius: 0 8px 8px 0;
+  color: #cbd5e1;
+  font-style: italic;
+}
+
+.md-blockquote > p {
+  margin-bottom: 6px;
+}
+
+.md-blockquote > p:last-child {
+  margin-bottom: 0;
+}
+
+/* Tables */
+.md-table-wrap {
+  margin: 16px 0;
+  overflow-x: auto;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg-card);
+}
+
+.md-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+  font-size: 13px;
+}
+
+.md-thead {
+  background: #141724;
+  border-bottom: 2px solid var(--border);
+}
+
+.md-th {
+  padding: 10px 14px;
+  font-weight: 600;
+  color: #f1f5f9;
+  letter-spacing: 0.2px;
+}
+
+.md-tr {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  transition: background 0.1s;
+}
+
+.md-tr:last-child {
+  border-bottom: none;
+}
+
+.md-tr:hover {
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.md-td {
+  padding: 9px 14px;
+  color: #cbd5e1;
+  line-height: 1.5;
+}
+
+.md-td code {
+  background: rgba(30, 41, 59, 0.6);
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  color: #38bdf8;
+  padding: 1px 5px;
+  border-radius: 4px;
+  font-family: monospace;
+  font-size: 12px;
+}
+
+/* Horizontal Rule */
+.md-hr {
+  border: none;
+  border-top: 1px solid var(--border);
+  margin: 18px 0;
+}
+
+/* Strong / Bold */
+.md-strong {
+  color: #ffffff;
+  font-weight: 600;
+}
