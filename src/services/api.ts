@@ -17,7 +17,12 @@ import type {
   ConfigOptions,
 } from '../types';
 
-export const BASE_URL = 'http://localhost:8000/api/v1';
+export const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://<your-backend-name>.onrender.com';
+
+const sanitizedBase = API_BASE_URL.replace(/\/+$/, '');
+export const BASE_URL = sanitizedBase.endsWith('/api/v1')
+  ? sanitizedBase
+  : `${sanitizedBase}/api/v1`;
 
 export interface QueryOptions {
   query: string;
