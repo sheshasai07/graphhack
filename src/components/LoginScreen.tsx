@@ -15,7 +15,6 @@ import {
   Database,
   Layers,
   Users,
-  CheckCircle2,
   AlertCircle,
 } from 'lucide-react';
 import type { UserSession } from '../types';

@@ -29,6 +29,8 @@ import type {
   AgentTask,
   MemoryEpisode,
   AgentSubgraph,
+  AgentSubgraphNode,
+  AgentSubgraphEdge,
   AgentMessage,
   AgentPersona,
   ConfigOptions,

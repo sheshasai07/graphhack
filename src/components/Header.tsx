@@ -1,6 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
 import {
-  Bot,
   Zap,
   Columns2,
   MessageSquare,
@@ -18,7 +17,6 @@ import {
   CheckCircle2,
   Cpu,
   LogOut,
-  User,
 } from 'lucide-react';
 import type { LayoutMode, GraphStats, SystemHealth, AppModule, Workspace, UserSession } from '../types';
 import './Header.css';

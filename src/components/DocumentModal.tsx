@@ -10,7 +10,6 @@ import {
   Layers,
   Sparkles,
   Database,
-  Cpu,
   Zap,
   Sliders,
   ShieldCheck,

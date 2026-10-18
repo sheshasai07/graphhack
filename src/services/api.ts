@@ -588,7 +588,7 @@ export const api = {
       return Array.isArray(data) ? data : data.value || [];
     } catch (err) {
       console.warn('Failed to fetch agent tasks from backend, using fallback', err);
-      return [];
+      return MOCK_TASKS;
     }
   },
 
@@ -681,7 +681,7 @@ export const api = {
       return Array.isArray(data) ? data : data.value || [];
     } catch (err) {
       console.warn('Failed to fetch memory episodes, using fallback', err);
-      return [];
+      return MOCK_EPISODES;
     }
   },
 
@@ -841,9 +841,83 @@ const MOCK_WORKSPACES: Workspace[] = [
   },
 ];
 
-const MOCK_TASKS: AgentTask[] = [];
+const MOCK_TASKS: AgentTask[] = [
+  {
+    id: 'task_901',
+    status: 'COMPLETED',
+    symptom: '504 Gateway Timeout on /auth/v1/token',
+    details: 'Spike in 504 timeouts reported by APIGateway for /auth/v1/token during EU peak traffic window.',
+    priority: 'HIGH',
+    created_at: '2026-10-17 10:15:00',
+    target_service: 'AuthService',
+    assigned_to: 'Sam Chen',
+    resolved_at: '2026-10-17 06:53:11',
+    resolution_fix: 'Scaled max_connections from 50 to 200, enabled Redis session cache, and refreshed circuit breaker',
+  },
+  {
+    id: 'task_9971',
+    status: 'OPEN',
+    symptom: 'Disable SMS 2FA impact on NotificationGateway',
+    details: 'Auto-dispatched by Investigator Agent. Targeted service: NotificationGateway. Risk of user lockouts and Twilio queue stalling.',
+    priority: 'HIGH',
+    created_at: '2026-10-17 06:52:51',
+    target_service: 'NotificationGateway',
+    assigned_to: 'Alex Rivera',
+    resolved_at: null,
+    resolution_fix: null,
+  },
+  {
+    id: 'task_9943',
+    status: 'OPEN',
+    symptom: 'APIGateway route fallback policy enforcement',
+    details: 'Auto-dispatched by Investigator Agent. Targeted service: APIGateway. SEC-Policy-401 requires strict fallback authentication.',
+    priority: 'MEDIUM',
+    created_at: '2026-10-17 06:52:23',
+    target_service: 'APIGateway',
+    assigned_to: 'Elena Rostova',
+    resolved_at: null,
+    resolution_fix: null,
+  },
+];
 
-const MOCK_EPISODES: MemoryEpisode[] = [];
+const MOCK_EPISODES: MemoryEpisode[] = [
+  {
+    id: 'ep_9991',
+    session_id: 'sess_default',
+    timestamp: '2026-10-17 06:53:11',
+    symptom: '504 Gateway Timeout on /auth/v1/token',
+    root_cause: 'Connection pool exhaustion under high concurrency spike',
+    fix: 'Scaled max_connections from 50 to 200, enabled Redis session cache, and refreshed circuit breaker',
+    service_name: 'AuthService',
+  },
+  {
+    id: 'ep_103',
+    session_id: 'sess_incident_2026_10',
+    timestamp: '2026-10-05 18:10:00',
+    symptom: 'UserDirectory read-replica lag causing stale credential checks',
+    root_cause: 'Replication thread stalled during cross-region DB failover drill',
+    fix: 'Increased replication buffer size and tuned failover heartbeat threshold',
+    service_name: 'UserDirectory',
+  },
+  {
+    id: 'ep_102',
+    session_id: 'sess_incident_2026_09',
+    timestamp: '2026-09-28 09:45:00',
+    symptom: 'SMS OTP delivery latency exceeding 180s during flash sale',
+    root_cause: 'Downstream Twilio carrier throttling on single toll-free sender ID',
+    fix: 'Implemented round-robin shortcode pool with SQS exponential backoff queue',
+    service_name: 'NotificationGateway',
+  },
+  {
+    id: 'ep_101',
+    session_id: 'sess_incident_2026_09',
+    timestamp: '2026-09-14 14:22:00',
+    symptom: '504 Gateway Timeout on /auth/v1/token under peak load',
+    root_cause: 'Connection pool exhaustion under 4000 req/s concurrency',
+    fix: 'Scaled max_connections from 50 to 200 and enabled Redis session cache',
+    service_name: 'AuthService',
+  },
+];
 
 function generateMockAgentChat(message: string, agentType?: string, autoResolve?: boolean): AgentChatResponse {
   const isDisableSMS = message.toLowerCase().includes('sms') || message.toLowerCase().includes('2fa');
@@ -914,7 +988,7 @@ function generateMockAgentChat(message: string, agentType?: string, autoResolve?
     },
   ];
 
-  const episodesRecalled: MemoryEpisode[] = [];
+  const episodesRecalled = [MOCK_EPISODES[2], MOCK_EPISODES[3]];
 
   const answer = isDisableSMS
     ? `### ⚠️ Enterprise Impact Briefing: Disabling SMS 2FA
