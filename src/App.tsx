@@ -132,6 +132,150 @@ const EMPTY_AGENT_SUBGRAPH: AgentSubgraph = {
   edge_count: 0,
 };
 
+/**
+ * Construct a clean, focused incident subgraph from the agent chat response.
+ * Pulls from response.subgraph, tasks_created, episodes_recalled, and impact_analysis.
+ * If none are populated, extracts queried entities and their 1-hop connections from graphData.
+ */
+function buildIncidentSubgraphFromResponse(
+  query: string,
+  response: any,
+  fullGraph: GraphVisualizationData
+): AgentSubgraph {
+  const nodeMap = new Map<string, AgentSubgraphNode>();
+  const edgeList: AgentSubgraphEdge[] = [];
+
+  // 1. If backend returned visual subgraph nodes, add them
+  if (response.subgraph && response.subgraph.nodes && response.subgraph.nodes.length > 0) {
+    response.subgraph.nodes.forEach((n: any) => {
+      nodeMap.set(n.id.toLowerCase(), n);
+      nodeMap.set(n.label.toLowerCase(), n);
+    });
+    if (response.subgraph.edges) {
+      edgeList.push(...response.subgraph.edges);
+    }
+  }
+
+  // 2. Add any created tasks as nodes
+  if (response.tasks_created && Array.isArray(response.tasks_created)) {
+    response.tasks_created.forEach((t: any) => {
+      const tid = t.id;
+      if (!nodeMap.has(tid.toLowerCase())) {
+        nodeMap.set(tid.toLowerCase(), {
+          id: tid,
+          label: `Task: ${t.symptom ? t.symptom.slice(0, 24) : tid}...`,
+          type: 'Task',
+          properties: { status: t.status, priority: t.priority, target: t.target_service, assigned: t.assigned_to },
+        });
+      }
+      if (t.target_service) {
+        edgeList.push({
+          source: tid,
+          target: t.target_service,
+          relation: 'TARGETS',
+          weight: 1.0,
+        });
+      }
+    });
+  }
+
+  // 3. Add recalled memory episodes
+  if (response.episodes_recalled && Array.isArray(response.episodes_recalled)) {
+    response.episodes_recalled.forEach((ep: any) => {
+      const epid = ep.id;
+      if (!nodeMap.has(epid.toLowerCase())) {
+        nodeMap.set(epid.toLowerCase(), {
+          id: epid,
+          label: `Episode: ${ep.symptom ? ep.symptom.slice(0, 24) : epid}...`,
+          type: 'MemoryEpisode',
+          properties: { fix: ep.fix, root_cause: ep.root_cause, service: ep.service_name },
+        });
+      }
+      if (ep.service_name) {
+        edgeList.push({
+          source: epid,
+          target: ep.service_name,
+          relation: 'RESOLVED_FOR',
+          weight: 1.0,
+        });
+      }
+    });
+  }
+
+  // 4. Add affected services / maintainers from impact analysis
+  if (response.impact_analysis) {
+    if (response.impact_analysis.affected_services && Array.isArray(response.impact_analysis.affected_services)) {
+      response.impact_analysis.affected_services.forEach((s: any) => {
+        const sName = s.name || s.id;
+        if (sName && !nodeMap.has(sName.toLowerCase())) {
+          nodeMap.set(sName.toLowerCase(), {
+            id: s.id || sName,
+            label: sName,
+            type: 'Service',
+            properties: { criticality: s.criticality || 'Tier-1' },
+          });
+        }
+      });
+    }
+    if (response.impact_analysis.maintainers_on_call && Array.isArray(response.impact_analysis.maintainers_on_call)) {
+      response.impact_analysis.maintainers_on_call.forEach((p: any) => {
+        const pName = p.name || p.id;
+        if (pName && !nodeMap.has(pName.toLowerCase())) {
+          nodeMap.set(pName.toLowerCase(), {
+            id: p.id || pName,
+            label: pName,
+            type: 'Person',
+            properties: { email: p.email, role: p.role },
+          });
+        }
+      });
+    }
+  }
+
+  // 5. Context-grounded fallback: Match query terms against fullGraph nodes to ensure queried entities show up
+  if (nodeMap.size < 2 && fullGraph && fullGraph.nodes.length > 0) {
+    const combined = (query + ' ' + (response.answer || '')).toLowerCase();
+    const matched = fullGraph.nodes.filter(n =>
+      combined.includes(n.label.toLowerCase()) || (n.id && combined.includes(n.id.toLowerCase()))
+    );
+
+    matched.slice(0, 8).forEach(n => {
+      nodeMap.set(n.id.toLowerCase(), {
+        id: n.id,
+        label: n.label,
+        type: n.type || 'Entity',
+        properties: n.description ? { description: n.description } : undefined,
+      });
+    });
+
+    const activeNodeIds = new Set(Array.from(nodeMap.values()).map(n => n.id.toLowerCase()));
+    const activeNodeLabels = new Set(Array.from(nodeMap.values()).map(n => n.label.toLowerCase()));
+
+    fullGraph.edges.forEach(e => {
+      const sId = e.source.toLowerCase();
+      const tId = e.target.toLowerCase();
+      const srcMatches = activeNodeIds.has(sId) || activeNodeLabels.has(sId);
+      const tgtMatches = activeNodeIds.has(tId) || activeNodeLabels.has(tId);
+      if (srcMatches && tgtMatches) {
+        edgeList.push({
+          source: e.source,
+          target: e.target,
+          relation: e.relation || 'RELATES_TO',
+          weight: e.weight || 1.0,
+        });
+      }
+    });
+  }
+
+  const uniqueNodes = Array.from(new Set(nodeMap.values()));
+  return {
+    nodes: uniqueNodes,
+    edges: edgeList,
+    node_count: uniqueNodes.length,
+    edge_count: edgeList.length,
+  };
+}
+
 let convCounter = 1;
 let msgCounter = 100;
 let agentMsgCounter = 200;
@@ -254,28 +398,6 @@ const App: React.FC = () => {
       setAgentTasks(tasksList);
       setMemoryEpisodes(episodesList);
       if (cfg) setConfigOptions(cfg);
-
-      // Populate agent subgraph dynamically from real graph data if available
-      if (g && g.nodes && g.nodes.length > 0) {
-        setAgentSubgraph({
-          nodes: g.nodes.map(n => ({
-            id: n.id,
-            label: n.label,
-            type: n.type || 'Entity',
-            properties: n.description ? { description: n.description } : undefined,
-          })),
-          edges: g.edges.map(e => ({
-            source: e.source,
-            target: e.target,
-            relation: e.relation || 'RELATES_TO',
-            weight: e.weight || 1.0,
-          })),
-          node_count: g.node_count,
-          edge_count: g.edge_count,
-        });
-      } else {
-        setAgentSubgraph(EMPTY_AGENT_SUBGRAPH);
-      }
 
       const activeWs = wsList.find(w => w.is_active);
       if (activeWs) setCurrentWorkspace(activeWs.id);
@@ -409,10 +531,11 @@ const App: React.FC = () => {
 
         setAgentMessages(prev => [...prev, assistantMsg]);
 
-        // Update Subgraph Canvas with the newly returned incident topology
-        if (response.subgraph && response.subgraph.nodes && response.subgraph.nodes.length > 0) {
-          setAgentSubgraph(response.subgraph);
-          setSelectedAgentNode(response.subgraph.nodes[0]?.id || null);
+        // Build focused incident subgraph from agent response + context
+        const incidentGraph = buildIncidentSubgraphFromResponse(text, response, graphData);
+        if (incidentGraph.nodes.length > 0) {
+          setAgentSubgraph(incidentGraph);
+          setSelectedAgentNode(incidentGraph.nodes[0]?.id || null);
         }
 
         // Refresh Blackboard tasks and memories if tasks were created or resolved
@@ -639,9 +762,10 @@ const App: React.FC = () => {
               <div className="agent-graph-section">
                 <AgentGraphViewer
                   subgraph={agentSubgraph}
+                  fullGraphData={graphData}
                   selectedNodeId={selectedAgentNode}
                   onSelectNode={setSelectedAgentNode}
-                  title="Knowledge Graph & Incident Topology"
+                  title="Incident Topology & Knowledge Graph"
                 />
               </div>
 
