@@ -255,8 +255,14 @@ export const IncidentBlackboard: React.FC<IncidentBlackboardProps> = ({
       {/* Tab B: Episodic Memory Timeline */}
       {activeTab === 'episodes' && (
         <div className="blackboard-content episodes-view">
-          <div className="episodes-timeline-list">
-            {episodes.map((ep, idx) => (
+          {episodes.length === 0 ? (
+            <div className="bb-empty-state">
+              <History size={24} className="bb-empty-icon" />
+              <span>No historical incident episodes in FalkorDB yet. Resolving incident tasks will commit verified runbooks here.</span>
+            </div>
+          ) : (
+            <div className="episodes-timeline-list">
+              {episodes.map((ep, idx) => (
               <div key={ep.id || idx} className="episode-card">
                 <div className="episode-card-header">
                   <div className="episode-meta-left">
@@ -301,6 +307,7 @@ export const IncidentBlackboard: React.FC<IncidentBlackboardProps> = ({
               </div>
             ))}
           </div>
+          )}
         </div>
       )}
 

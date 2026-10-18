@@ -521,6 +521,17 @@ export const AgentGraphViewer: React.FC<AgentGraphViewerProps> = ({
         onWheel={handleWheel}
       />
 
+      {/* Empty State Overlay */}
+      {nodes.length === 0 && (
+        <div className="agent-graph-empty-state">
+          <Share2 size={36} className="empty-graph-icon" />
+          <h4 className="empty-graph-title">No Graph Nodes Active</h4>
+          <p className="empty-graph-desc">
+            Upload documents or ask the Investigator Agent a question to dynamically map knowledge graph entities and relationships.
+          </p>
+        </div>
+      )}
+
       {/* Directed Highlight Pathway Legend */}
       <div className="pathway-legend-strip">
         <div className="pathway-label">Reasoning Traversal:</div>

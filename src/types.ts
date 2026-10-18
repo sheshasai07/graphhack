@@ -296,3 +296,12 @@ export interface AgentMessage {
   execution_time_ms?: number;
   isStreaming?: boolean;
 }
+
+export interface UserSession {
+  id: string;
+  name: string;
+  email: string;
+  role: string;
+  avatar?: string;
+  loginTime: string;
+}

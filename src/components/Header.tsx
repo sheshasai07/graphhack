@@ -17,8 +17,10 @@ import {
   RotateCcw,
   CheckCircle2,
   Cpu,
+  LogOut,
+  User,
 } from 'lucide-react';
-import type { LayoutMode, GraphStats, SystemHealth, AppModule, Workspace } from '../types';
+import type { LayoutMode, GraphStats, SystemHealth, AppModule, Workspace, UserSession } from '../types';
 import './Header.css';
 
 interface HeaderProps {
@@ -36,6 +38,8 @@ interface HeaderProps {
   onRefreshHealth: () => void;
   onOpenSettings: () => void;
   onOpenDocuments: () => void;
+  userSession?: UserSession | null;
+  onLogout?: () => void;
 }
 
 const Header: React.FC<HeaderProps> = ({
@@ -53,6 +57,8 @@ const Header: React.FC<HeaderProps> = ({
   onRefreshHealth,
   onOpenSettings,
   onOpenDocuments,
+  userSession,
+  onLogout,
 }) => {
   const isHealthy = health?.status === 'healthy';
   const falkorConnected = Boolean(health?.falkordb_connected);
@@ -288,6 +294,31 @@ const Header: React.FC<HeaderProps> = ({
               </button>
             </div>
           </>
+        )}
+
+        {/* Logged In User Profile & Sign Out */}
+        {userSession && (
+          <div className="header-user-profile">
+            <div className="user-avatar-badge" title={`Signed in as ${userSession.email}`}>
+              <span className="user-avatar-initials">
+                {userSession.name.slice(0, 2).toUpperCase()}
+              </span>
+            </div>
+            <div className="user-info-text">
+              <span className="user-display-name">{userSession.name}</span>
+              <span className="user-display-role">{userSession.role.split('•')[0].trim()}</span>
+            </div>
+            {onLogout && (
+              <button
+                className="user-logout-btn"
+                onClick={onLogout}
+                title="Sign Out of Current Session"
+              >
+                <LogOut size={13} />
+                <span className="logout-text">Exit</span>
+              </button>
+            )}
+          </div>
         )}
       </div>
     </header>

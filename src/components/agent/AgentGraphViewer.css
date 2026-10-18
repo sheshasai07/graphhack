@@ -381,3 +381,45 @@
   from { opacity: 0; transform: translateX(12px); }
   to { opacity: 1; transform: translateX(0); }
 }
+
+/* Empty State Overlay */
+.agent-graph-empty-state {
+  position: absolute;
+  inset: 50px 0 35px 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  text-align: center;
+  background: radial-gradient(circle, rgba(15, 23, 42, 0.7) 0%, rgba(10, 15, 29, 0.95) 100%);
+  pointer-events: none;
+  z-index: 5;
+}
+
+.empty-graph-icon {
+  color: #38bdf8;
+  opacity: 0.5;
+  margin-bottom: 12px;
+  animation: pulseGlow 3s ease-in-out infinite;
+}
+
+@keyframes pulseGlow {
+  0%, 100% { transform: scale(1); opacity: 0.4; }
+  50% { transform: scale(1.08); opacity: 0.7; }
+}
+
+.empty-graph-title {
+  margin: 0 0 6px 0;
+  font-size: 15px;
+  font-weight: 600;
+  color: #f1f5f9;
+}
+
+.empty-graph-desc {
+  margin: 0;
+  max-width: 380px;
+  font-size: 12px;
+  color: #94a3b8;
+  line-height: 1.5;
+}

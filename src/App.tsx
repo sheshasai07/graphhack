@@ -6,6 +6,7 @@ import ChatInput from './components/ChatInput';
 import GraphVisualizer from './components/GraphVisualizer';
 import QuerySettingsDrawer from './components/QuerySettingsDrawer';
 import DocumentModal from './components/DocumentModal';
+import LoginScreen from './components/LoginScreen';
 import AgentChatArea from './components/agent/AgentChatArea';
 import AgentGraphViewer from './components/agent/AgentGraphViewer';
 import IncidentBlackboard from './components/agent/IncidentBlackboard';
@@ -31,6 +32,7 @@ import type {
   AgentMessage,
   AgentPersona,
   ConfigOptions,
+  UserSession,
 } from './types';
 import './App.css';
 
@@ -122,41 +124,12 @@ const DEFAULT_OPTIONS: GraphRAGOptions = {
   limit_nodes: 100,
 };
 
-// Initial Seed Subgraph for Enterprise Microservices Topology
-const INITIAL_AGENT_SUBGRAPH: AgentSubgraph = {
-  nodes: [
-    { id: 'srv_auth', label: 'AuthService', type: 'Service', properties: { tier: 'Tier-1', sla: '99.99%', owner: 'Sam Chen' } },
-    { id: 'srv_gateway', label: 'APIGateway', type: 'Service', properties: { tier: 'Tier-1', routing: 'Envoy/Kong' } },
-    { id: 'srv_notif', label: 'NotificationGateway', type: 'Service', properties: { vendor: 'Twilio', owner: 'Alex Rivera' } },
-    { id: 'srv_userdir', label: 'UserDirectory', type: 'Service', properties: { replicaCount: 3, engine: 'PostgreSQL' } },
-    { id: 'srv_billing', label: 'BillingService', type: 'Service', properties: { pci_compliant: true, gateway: 'Stripe' } },
-    { id: 'srv_session', label: 'SessionStore', type: 'Service', properties: { engine: 'Redis', ttl: '24h' } },
-    { id: 'feat_sms', label: 'SMS 2FA', type: 'Feature', properties: { status: 'DEPRECATION_CANDIDATE', tier: 'P1' } },
-    { id: 'feat_social', label: 'SocialAuth', type: 'Feature', properties: { providers: 'Google, GitHub' } },
-    { id: 'feat_bio', label: 'BiometricLogin', type: 'Feature', properties: { standard: 'WebAuthn' } },
-    { id: 'person_alex', label: 'Alex Rivera', type: 'Person', properties: { email: 'alex@enterprise.com', role: 'Staff SRE' } },
-    { id: 'person_sam', label: 'Sam Chen', type: 'Person', properties: { email: 'sam@enterprise.com', role: 'Lead Architect' } },
-    { id: 'person_elena', label: 'Elena Rostova', type: 'Person', properties: { email: 'elena@enterprise.com', role: 'Gateway Maintainer' } },
-    { id: 'pol_401', label: 'SEC-Policy-401', type: 'Policy', properties: { mandate: 'MFA Required for Elevated Access' } },
-    { id: 'ep_102', label: 'ep_102: SMS Throttle', type: 'MemoryEpisode', properties: { fix: 'Shortcode pool with SQS' } },
-    { id: 'ep_101', label: 'ep_101: 504 Timeout', type: 'MemoryEpisode', properties: { fix: 'Scaled connection pool to 200' } },
-  ],
-  edges: [
-    { source: 'srv_gateway', target: 'srv_auth', relation: 'DEPENDS_ON', weight: 1.0 },
-    { source: 'srv_gateway', target: 'srv_billing', relation: 'DEPENDS_ON', weight: 1.0 },
-    { source: 'srv_auth', target: 'srv_notif', relation: 'DEPENDS_ON', weight: 1.0 },
-    { source: 'srv_auth', target: 'srv_userdir', relation: 'DEPENDS_ON', weight: 0.9 },
-    { source: 'srv_auth', target: 'srv_session', relation: 'DEPENDS_ON', weight: 1.0 },
-    { source: 'srv_notif', target: 'feat_sms', relation: 'PROVIDES', weight: 1.0 },
-    { source: 'srv_auth', target: 'feat_social', relation: 'PROVIDES', weight: 0.8 },
-    { source: 'srv_auth', target: 'feat_bio', relation: 'PROVIDES', weight: 0.9 },
-    { source: 'person_alex', target: 'srv_notif', relation: 'MAINTAINS', weight: 1.0 },
-    { source: 'person_sam', target: 'srv_auth', relation: 'MAINTAINS', weight: 1.0 },
-    { source: 'person_elena', target: 'srv_gateway', relation: 'MAINTAINS', weight: 1.0 },
-    { source: 'srv_auth', target: 'pol_401', relation: 'GOVERNED_BY', weight: 1.0 },
-    { source: 'ep_102', target: 'srv_notif', relation: 'AFFECTED', weight: 1.0 },
-    { source: 'ep_101', target: 'srv_auth', relation: 'AFFECTED', weight: 1.0 },
-  ],
+// Empty initial state for Knowledge Graph & Incident Topology (dynamically populated from FalkorDB/Agent)
+const EMPTY_AGENT_SUBGRAPH: AgentSubgraph = {
+  nodes: [],
+  edges: [],
+  node_count: 0,
+  edge_count: 0,
 };
 
 let convCounter = 1;
@@ -174,6 +147,34 @@ function createConversation(): Conversation {
 }
 
 const App: React.FC = () => {
+  // User Authentication & Demo Session (Persisted in localStorage for multi-user access)
+  const [userSession, setUserSession] = useState<UserSession | null>(() => {
+    try {
+      const saved = localStorage.getItem('graphgenie_user_session');
+      return saved ? JSON.parse(saved) : null;
+    } catch {
+      return null;
+    }
+  });
+
+  const handleLogin = useCallback((session: UserSession) => {
+    setUserSession(session);
+    try {
+      localStorage.setItem('graphgenie_user_session', JSON.stringify(session));
+    } catch (e) {
+      console.error('Failed to save session to localStorage', e);
+    }
+  }, []);
+
+  const handleLogout = useCallback(() => {
+    setUserSession(null);
+    try {
+      localStorage.removeItem('graphgenie_user_session');
+    } catch (e) {
+      console.error('Failed to clear session from localStorage', e);
+    }
+  }, []);
+
   // Top-Level Module: 'agent' (Main GraphGenie Flow) vs 'rag' (Document Knowledge Base)
   const [activeModule, setActiveModule] = useState<AppModule>('agent');
 
@@ -186,7 +187,7 @@ const App: React.FC = () => {
   const [agentMessages, setAgentMessages] = useState<AgentMessage[]>([]);
   const [agentTasks, setAgentTasks] = useState<AgentTask[]>([]);
   const [memoryEpisodes, setMemoryEpisodes] = useState<MemoryEpisode[]>([]);
-  const [agentSubgraph, setAgentSubgraph] = useState<AgentSubgraph>(INITIAL_AGENT_SUBGRAPH);
+  const [agentSubgraph, setAgentSubgraph] = useState<AgentSubgraph>(EMPTY_AGENT_SUBGRAPH);
   const [isAgentLoading, setIsAgentLoading] = useState(false);
   const [selectedAgentNode, setSelectedAgentNode] = useState<string | null>(null);
 
@@ -254,6 +255,28 @@ const App: React.FC = () => {
       setMemoryEpisodes(episodesList);
       if (cfg) setConfigOptions(cfg);
 
+      // Populate agent subgraph dynamically from real graph data if available
+      if (g && g.nodes && g.nodes.length > 0) {
+        setAgentSubgraph({
+          nodes: g.nodes.map(n => ({
+            id: n.id,
+            label: n.label,
+            type: n.type || 'Entity',
+            properties: n.description ? { description: n.description } : undefined,
+          })),
+          edges: g.edges.map(e => ({
+            source: e.source,
+            target: e.target,
+            relation: e.relation || 'RELATES_TO',
+            weight: e.weight || 1.0,
+          })),
+          node_count: g.node_count,
+          edge_count: g.edge_count,
+        });
+      } else {
+        setAgentSubgraph(EMPTY_AGENT_SUBGRAPH);
+      }
+
       const activeWs = wsList.find(w => w.is_active);
       if (activeWs) setCurrentWorkspace(activeWs.id);
     } catch (err) {
@@ -309,7 +332,6 @@ const App: React.FC = () => {
     try {
       await api.seedAgentGraph();
       await syncBackendData();
-      setAgentSubgraph(INITIAL_AGENT_SUBGRAPH);
     } catch (err) {
       console.error('Seed error', err);
     } finally {
@@ -570,6 +592,11 @@ const App: React.FC = () => {
     [activeId, options, layoutMode]
   );
 
+  // If not authenticated, display the Login Screen with Demo Credentials
+  if (!userSession) {
+    return <LoginScreen onLogin={handleLogin} />;
+  }
+
   return (
     <div className="app-layout">
       {/* 1. Header with Tab Switcher, Workspace Selector & Health Status */}
@@ -588,6 +615,8 @@ const App: React.FC = () => {
         onRefreshHealth={syncBackendData}
         onOpenSettings={() => setIsSettingsOpen(true)}
         onOpenDocuments={() => setIsDocModalOpen(true)}
+        userSession={userSession}
+        onLogout={handleLogout}
       />
 
       <div className="app-body">
@@ -612,7 +641,7 @@ const App: React.FC = () => {
                   subgraph={agentSubgraph}
                   selectedNodeId={selectedAgentNode}
                   onSelectNode={setSelectedAgentNode}
-                  title="Enterprise Microservices & Incident Topology"
+                  title="Knowledge Graph & Incident Topology"
                 />
               </div>
 
